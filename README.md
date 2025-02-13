@@ -5,7 +5,7 @@ Optional project of the [Streaming Data Analytics](http://emanueledellavalle.org
 Student: **[To be assigned]**
 
 ## Background
-Concept Drift occurs when the distribution of data changes over time, making a previously trained model less effective. In Streaming Machine Learning (SML) scenarios, it is critical to detect these changes early to adapt the model and maintain high performance. CapyMOA implements several Concept Drift Detectors, tools that help identify concept drifts to allow models to adapt. 
+Concept Drift occurs when the distribution of data changes over time, making a previously trained model less effective. In Streaming Machine Learning (SML) scenarios, it is critical to detect these changes early to adapt the model and maintain high performance. CapyMOA implements several Concept Drift Detectors, tools that help identify concept drifts to help models in the adaption. 
 
 The objective of this project is to conduct a benchmarking of different Concept Drift Detectors in CapyMOA, evaluating their impact on the performance of a baseline classifier.
 
