@@ -18,7 +18,7 @@ The project includes the following objectives:
   - Accuracy/F1-score of the model.
   - Execution time required.
   - Memory and CPU utilization.
--Identify the most effective detector based on the conditions of each dataset.
+- Identify the most effective detector based on the conditions of each dataset.
 
 ## Datasets
 
