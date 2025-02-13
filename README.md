@@ -13,7 +13,7 @@ CapyMOA implements several Concept Drift Detectors, tools that help identify con
 The project includes the following objectives:
 - Test a Baseline Classifier without any drift detectors to measure its initial performance in terms of accuracy, execution time, and memory consumption.
 - Compare the results obtained by applying different Concept Drift Detectors.
-- Use 3-4 classic Streaming Machine Learning datasets to ensure a fair and meaningful comparison.
+- Use different classic Streaming Machine Learning datasets to ensure a fair and meaningful comparison.
 - Analyze how the integration of a Concept Drift Detector changes:
   -Accuracy/F1-score of the model.
   -Execution time required.
