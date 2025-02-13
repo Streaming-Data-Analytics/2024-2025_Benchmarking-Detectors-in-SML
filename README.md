@@ -10,6 +10,15 @@ Concept Drift occurs when the distribution of data changes over time, making a p
 CapyMOA implements several Concept Drift Detectors, tools that help identify concept drifts to allow models to adapt. The objective of this project is to conduct a benchmarking of different Concept Drift Detectors in CapyMOA, evaluating their impact on the performance of a baseline classifier.
 
 ## Goals and objectives
+The project includes the following objectives:
+- Test a Baseline Classifier without any drift detectors to measure its initial performance in terms of accuracy, execution time, and memory consumption.
+- Compare the results obtained by applying different Concept Drift Detectors.
+- Use 3-4 classic Streaming Machine Learning datasets to ensure a fair and meaningful comparison.
+- Analyze how the integration of a Concept Drift Detector changes:
+  -Accuracy/F1-score of the model.
+  -Execution time required.
+  -Memory and CPU utilization.
+-Identify the most effective detector based on the conditions of each dataset.
 
 ## Datasets
 
