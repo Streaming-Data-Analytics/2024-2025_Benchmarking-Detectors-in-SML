@@ -27,6 +27,18 @@ The datasets used for benchmarking will include classic Streaming Machine Learni
 - Hyper100k: it is a classification problem based on the moving hyperplane generator.
 
 ## Methodologies/models to apply
+The methodologies and models used will be:
+- Baselina Classifier: a simple model such as Hoeffding Tree or Naive Bayes to establish initial performance without drift detection.
+
+Concept Drift Detectors:
+- ADWIN (ADaptive WINdowing)
+- STEPD (Statistical Test of Equal Proportions Drift)
+- CUSUM (CUmulative SUM)
+- Page-Hinkley
+- DDM (Drift Detection Method)
+- HDDM_A (Hoeffding Drift Detection Method - Absolute)
+- HDDM_W (Hoeffding Drift Detection Method - Weighted)
+
 
 ## Evaluation metrics
 
