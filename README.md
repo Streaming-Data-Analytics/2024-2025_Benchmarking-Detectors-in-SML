@@ -15,7 +15,7 @@ The project includes the following objectives:
 - Compare the results obtained by applying different Concept Drift Detectors.
 - Use different classic Streaming Machine Learning datasets to ensure a fair and meaningful comparison.
 - Analyze how the integration of a Concept Drift Detector changes:
-  -Accuracy/F1-score of the model.
+ -Accuracy/F1-score of the model.
   -Execution time required.
   -Memory and CPU utilization.
 -Identify the most effective detector based on the conditions of each dataset.
