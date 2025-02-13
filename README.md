@@ -47,4 +47,11 @@ The evaluation metrics used for comparison will be:
 - *CPU Utilization*: computational load generated.
 
 ## Deliverable
-
+At the end of the project, the student must deliver:
+- Jupyter notebooks with:
+  - Implementation of Baseline Classifier without drift detection.
+  - Comparison of performance with different Concept Drift Detectors.
+  - Visualization of results with graphs and statistics.
+  - Conclusions and recommendations on which detector performs best based on different datasets and different metrics
+    
+This project will provide a detailed overview of Concept Drift Detectors in CapyMOA, highlighting their advantages, limitations and impact on the performance of Streaming Machine Learning models.
