@@ -39,8 +39,12 @@ Concept Drift Detectors:
 - *HDDM_A* (Hoeffding Drift Detection Method - Absolute)
 - *HDDM_W* (Hoeffding Drift Detection Method - Weighted)
 
-
 ## Evaluation metrics
+The evaluation metrics used for comparison will be:
+- *Accuracy/F1-score*: measuring the predictive performance of the model.
+- *Execution time*: analysis of the time required to process the data stream with and without drift detection.
+- *Memory Utilization*: amount of RAM required during execution.
+- *CPU Utilization*: computational load generated.
 
 ## Deliverable
 
