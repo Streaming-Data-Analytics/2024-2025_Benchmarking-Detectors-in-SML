@@ -28,7 +28,7 @@ The datasets used for benchmarking will include classic Streaming Machine Learni
 
 ## Methodologies/models to apply
 The methodologies and models used will be:
-- *Baseline Classifier*: a simple model such as Hoeffding Tree or Naive Bayes to establish initial performance without drift detection.
+- *Baseline Classifier*: use both Hoeffding Tree and Naive Bayes to establish initial performance without drift detection.
 
 Concept Drift Detectors:
 - *ADWIN* (ADaptive WINdowing)
