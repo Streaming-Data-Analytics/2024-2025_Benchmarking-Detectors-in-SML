@@ -25,6 +25,7 @@ The datasets used for benchmarking will include classic Streaming Machine Learni
 - *Electricity*: it is a classification problem based on the Australian New South Wales Electricity Market.
 - *Covtype*: it contains the forest cover type for 30 x 30 meter cells obtained from US Forest Service (USFS) Region 2 Resource Information System (RIS) data.
 - *Hyper100k*: it is a classification problem based on the moving hyperplane generator.
+- *Sensor*: it is a classification problem based on indoor sensor data.
 
 ## Methodologies/models to apply
 The methodologies and models used will be:
