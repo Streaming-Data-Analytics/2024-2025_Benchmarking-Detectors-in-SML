@@ -56,3 +56,11 @@ At the end of the project, the student must deliver:
   - Conclusions and recommendations on which detector performs best based on different datasets and different metrics.
     
 This project will provide a detailed overview of Concept Drift Detectors in CapyMOA, highlighting their advantages, limitations and impact on the performance of Streaming Machine Learning models.
+
+## Note for Students
+- Clone the created repository offline;
+- Add your name and surname into the Readme file;
+- Make any changes to your repository, according to the specific assignment;
+- Add a requirement.txt file for code reproducibility and instructions on how to replicate the results;
+- Commit your changes to your local repository;
+- Push your changes to your online repository.
