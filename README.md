@@ -2,7 +2,7 @@
 
 Optional project of the [Streaming Data Analytics](http://emanueledellavalle.org/teaching/streaming-data-analytics-2023-24/) course provided by [Politecnico di Milano](https://www11.ceda.polimi.it/schedaincarico/schedaincarico/controller/scheda_pubblica/SchedaPublic.do?&evn_default=evento&c_classe=811164&polij_device_category=DESKTOP&__pj0=0&__pj1=d563c55e73c3035baf5b0bab2dda086b).
 
-Student: **[To be assigned]**
+Student: **Tommaso Crippa**
 
 ## Background
 Concept Drift occurs when the distribution of data changes over time, making a previously trained model less effective. In Streaming Machine Learning (SML) scenarios, it is critical to detect these changes early to adapt the model and maintain high performance. CapyMOA implements several Concept Drift Detectors, tools that help identify concept drifts to help models in the adaption. 
