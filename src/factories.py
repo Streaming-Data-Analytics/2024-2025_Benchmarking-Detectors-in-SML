@@ -58,7 +58,8 @@ class DetectorFactory:
         "PageHinkley": PageHinkley,
         "DDM": DDM,
         "HDDMAverage": HDDMAverage,
-        "HDDMWeighted": HDDMWeighted
+        "HDDMWeighted": HDDMWeighted,
+        "None": None
     }
 
     @staticmethod

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import time
 import psutil
+import threading
 from memory_profiler import memory_usage
 
 from factories import ClassifierFactory, StreamFactory, DetectorFactory
@@ -56,19 +57,32 @@ def evaluate_detector(detector, stream, classifier):
     )
     return results
 
-def benchmark_detector(detector, stream, classifier, save_results=True, filename = "results.csv"):
+def benchmark_detector(detector, stream, classifier, print_results=True, save_results=True, filename = "results.csv"):
 
     stream.restart()
 
+    cpu_samples = []
+
+    def monitor_cpu(process, interval=0.1):
+        while not stop_event.is_set():
+            cpu_samples.append(process.cpu_percent(interval=None))
+            time.sleep(interval)
+
     process = psutil.Process(os.getpid())
+    stop_event = threading.Event()
+    monitor_thread = threading.Thread(target=monitor_cpu, args=(process,))
+    monitor_thread.start()
 
     start_time = time.time()
     mem_usage, results = memory_usage((evaluate_detector, (detector, stream, classifier)), retval=True)
     end_time = time.time()
 
+    stop_event.set()
+    monitor_thread.join()
+
+    cpu_usage = sum(cpu_samples) / len(cpu_samples) / psutil.cpu_count()    
     execution_time = end_time - start_time
-    cpu_usage = process.cpu_percent(interval=1)
-    memory_usage_max = max(mem_usage)
+    max_mem_usage = max(mem_usage)
 
     results = pd.DataFrame([{
         "dataset": stream.__class__.__name__,
@@ -80,13 +94,16 @@ def benchmark_detector(detector, stream, classifier, save_results=True, filename
         "windowed_f1": results.windowed.metrics_per_window()["f1_score"].tolist(),
         "execution_time": execution_time,
         "cpu_usage": cpu_usage,
-        "memory_usage": memory_usage_max,
-        "changes": detector.detection_index if detector != None else [],
+        "memory_usage": max_mem_usage,
+        "num_changes": len(detector.detection_index if detector != None else []),
     }])
 
     if save_results:
         results.to_csv(filename, mode="a", header=not pd.io.common.file_exists(filename), index=False)
         print(f"Results saved to {filename}")
+    if print_results:
+        print("Results:")
+        print(results)
 
     return results
 
@@ -100,12 +117,11 @@ def parse_args():
     parser.add_argument("--classifier", choices=ClassifierFactory.classifier_classes.keys(), required=True, help="Select the classifier.")
     parser.add_argument("--detector", choices=DetectorFactory.detector_classes.keys(), required=True, help="Select the drift detector.")
 
-    # Window size argument as percent of dataset size, optional and default to 1%
     parser.add_argument("--window_size", type=float, default=1.0, help="Window size as a percentage of dataset size (default: 1.0).")
-    # Save results argument, optional and default to True
+    parser.add_argument("--print_results", type=lambda x: x.lower() == 'true', default=False, help="Print results to console (default: True)")
     parser.add_argument("--save_results", type=lambda x: x.lower() == 'true', default=True, help="Save results to a CSV file (default: True)")
-    # Filename argument, optional and default to "results.csv"
     parser.add_argument("--filename", type=str, default="results.csv", help="Filename to save results (default: results.csv).")
+
 
     args = parser.parse_args()
 
@@ -114,18 +130,20 @@ def parse_args():
     detector = DetectorFactory.create(args.detector)
 
     window_size = int(stream._length * (args.window_size / 100)) if args.window_size else None
+    print_results = args.print_results
     save_results = args.save_results
     filename = args.filename
 
-    return stream, classifier, detector, window_size, save_results, filename
+
+    return stream, classifier, detector, window_size, print_results, save_results, filename
 
 
 
 
 if __name__ == "__main__":
 
-    stream, classifier, detector, window_size, save_results, filename = parse_args()
+    stream, classifier, detector, window_size, print_results, save_results, filename = parse_args()
 
     WINDOW_SIZE = window_size
 
-    benchmark_detector(detector, stream, classifier, save_results=save_results, filename=filename)
+    benchmark_detector(detector, stream, classifier, print_results=print_results, save_results=save_results, filename=filename)
