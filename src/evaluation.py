@@ -23,16 +23,17 @@ import argparse
 WINDOW_SIZE = 100 # default value
 
 def evaluate_detector(detector, stream, classifier):
-    """Evaluate a drift detector with specified stream and classifier types."""
-
-    
-    WINDOW_SIZE = stream._length // 100  # 1% of dataset size
     i = 0
     cumulative_evaluator = ClassificationEvaluator(schema=stream.get_schema())
     windowed_evaluator = ClassificationWindowedEvaluator(schema=stream.get_schema(), window_size=WINDOW_SIZE)
 
+    # [NOTE] in capymoa==0.9.0, the add_element() method of HDDM_Weighted behaves differently to the other detectors,
+    # in this evaluation function the changes are managed autonomously
+    changes = []
+
     while stream.has_more_instances():
         i += 1
+
         instance = stream.next_instance()
 
         y = instance.y_index
@@ -43,21 +44,30 @@ def evaluate_detector(detector, stream, classifier):
 
         classifier.train(instance)
 
-        if detector is not None:
-            detector.add_element(y)
-            if detector.detected_change(): 
-                # print(f"Change detected at index: {i}")
-                classifier = ClassifierFactory.create(classifier.__class__.__name__, stream.get_schema())
 
-    results = PrequentialResults(
-        learner=str(classifier),
-        stream=stream,
-        cumulative_evaluator=cumulative_evaluator,
-        windowed_evaluator=windowed_evaluator
-    )
+
+        if detector != None:
+            detector.add_element(y)
+            if detector.detected_change():
+              # print("Change detected at index: " + str(i))
+              classifier = ClassifierFactory.create(classifier.__class__.__name__, stream.get_schema())
+              if detector.__class__.__name__ == "HDDMWeighted":
+                  changes.append(i)
+
+
+    if detector.__class__.__name__ == "HDDMWeighted":
+        detector.detection_index = changes
+
+
+
+    results = PrequentialResults(learner=str(classifier),
+                                 stream=stream,
+                                 cumulative_evaluator=cumulative_evaluator,
+                                 windowed_evaluator=windowed_evaluator)
     return results
 
-def benchmark_detector(detector, stream, classifier, print_results=True, save_results=True, filename = "results.csv"):
+
+def benchmark_detector(detector, stream, classifier, print_results=False, save_results=True, filename = "results.csv"):
 
     stream.restart()
 
@@ -129,21 +139,19 @@ def parse_args():
     classifier = ClassifierFactory.create(args.classifier, stream.get_schema())
     detector = DetectorFactory.create(args.detector)
 
-    window_size = int(stream._length * (args.window_size / 100)) if args.window_size else None
+    WINDOW_SIZE = int(stream._length * (args.window_size / 100)) if args.window_size else int(1.0 * (args.window_size / 100))
     print_results = args.print_results
     save_results = args.save_results
     filename = args.filename
 
 
-    return stream, classifier, detector, window_size, print_results, save_results, filename
+    return stream, classifier, detector, print_results, save_results, filename
 
 
 
 
 if __name__ == "__main__":
 
-    stream, classifier, detector, window_size, print_results, save_results, filename = parse_args()
-
-    WINDOW_SIZE = window_size
+    stream, classifier, detector, print_results, save_results, filename = parse_args()
 
     benchmark_detector(detector, stream, classifier, print_results=print_results, save_results=save_results, filename=filename)
