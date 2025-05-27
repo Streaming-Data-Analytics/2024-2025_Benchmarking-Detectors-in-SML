@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import time
 import psutil
+import argparse
 import threading
 from memory_profiler import memory_usage
 
@@ -16,142 +17,148 @@ from factories import ClassifierFactory, StreamFactory, DetectorFactory
 from capymoa.evaluation import ClassificationEvaluator, ClassificationWindowedEvaluator
 from capymoa.evaluation.results import PrequentialResults
 
-import argparse
 
 
 
-WINDOW_SIZE = 100 # default value
+class Benchmarker:
+    def __init__(self, stream=None, classifier=None, detector=None, window_size=100, cooldown_window=0, print_results=False, save_results=False, filename="results.csv"):
+        if stream is None or classifier is None or detector is None:
+            stream, classifier, detector, window_size, cooldown_window, print_results, save_results, filename = self.parse_args()
+        
+        self.stream = stream
+        self.classifier = classifier
+        self.detector = detector
+        self.window_size = window_size
+        self.cooldown_window = cooldown_window
+        self.print_results = print_results if print_results is not None else False
+        self.save_results = save_results if save_results is not None else True
+        self.filename = filename if filename is not None else "results.csv"
 
-def evaluate_detector(detector, stream, classifier):
-    i = 0
-    cumulative_evaluator = ClassificationEvaluator(schema=stream.get_schema())
-    windowed_evaluator = ClassificationWindowedEvaluator(schema=stream.get_schema(), window_size=WINDOW_SIZE)
+    def evaluate_detector(self):
+        i = 0
+        cumulative_evaluator = ClassificationEvaluator(schema=self.stream.get_schema())
+        windowed_evaluator = ClassificationWindowedEvaluator(schema=self.stream.get_schema(), window_size=self.window_size)
 
-    # [NOTE] in capymoa==0.9.0, the add_element() method of HDDM_Weighted behaves differently to the other detectors,
-    # in this evaluation function the changes are managed autonomously
-    changes = []
+        changes = []
+        last_detection_index = -self.cooldown_window
 
-    while stream.has_more_instances():
-        i += 1
+        while self.stream.has_more_instances():
+            i += 1
+            instance = self.stream.next_instance()
+            y = instance.y_index
+            y_pred = self.classifier.predict(instance)
 
-        instance = stream.next_instance()
+            cumulative_evaluator.update(y, y_pred)
+            windowed_evaluator.update(y, y_pred)
 
-        y = instance.y_index
-        y_pred = classifier.predict(instance)
+            self.classifier.train(instance)
 
-        cumulative_evaluator.update(y, y_pred)
-        windowed_evaluator.update(y, y_pred)
-
-        classifier.train(instance)
-
-
-
-        if detector != None:
-            detector.add_element(y)
-            if detector.detected_change():
-              # print("Change detected at index: " + str(i))
-              classifier = ClassifierFactory.create(classifier.__class__.__name__, stream.get_schema())
-              if detector.__class__.__name__ == "HDDMWeighted":
-                  changes.append(i)
-
-
-    if detector.__class__.__name__ == "HDDMWeighted":
-        detector.detection_index = changes
-
-
-
-    results = PrequentialResults(learner=str(classifier),
-                                 stream=stream,
-                                 cumulative_evaluator=cumulative_evaluator,
-                                 windowed_evaluator=windowed_evaluator)
-    return results
+            if self.detector is not None:
+                self.detector.add_element(y)
+                if self.detector.detected_change():
+                    if i - last_detection_index >= self.cooldown_window:
+                        self.classifier = ClassifierFactory.create(self.classifier.__class__.__name__, self.stream.get_schema())
+                        last_detection_index = i
+                        if self.detector.__class__.__name__ == "HDDMWeighted":
+                            changes.append(i)
 
 
-def benchmark_detector(detector, stream, classifier, print_results=False, save_results=True, filename = "results.csv"):
+        # [NOTE] in capymoa==0.9.0, the add_element() method of HDDM_Weighted behaves differently to the other detectors,
+        # in this evaluation function the changes are managed autonomously
+        if self.detector.__class__.__name__ == "HDDMWeighted":
+            self.detector.detection_index = changes
 
-    stream.restart()
+        results = PrequentialResults(
+            learner=str(self.classifier),
+            stream=self.stream,
+            cumulative_evaluator=cumulative_evaluator,
+            windowed_evaluator=windowed_evaluator
+        )
 
-    cpu_samples = []
+        return results
 
-    def monitor_cpu(process, interval=0.1):
-        while not stop_event.is_set():
-            cpu_samples.append(process.cpu_percent(interval=None))
-            time.sleep(interval)
+    def benchmark_detector(self):
+        self.stream.restart()
+        cpu_samples = []
 
-    process = psutil.Process(os.getpid())
-    stop_event = threading.Event()
-    monitor_thread = threading.Thread(target=monitor_cpu, args=(process,))
-    monitor_thread.start()
+        def monitor_cpu(process, interval=0.1):
+            while not stop_event.is_set():
+                cpu_samples.append(process.cpu_percent(interval=None))
+                time.sleep(interval)
 
-    start_time = time.time()
-    mem_usage, results = memory_usage((evaluate_detector, (detector, stream, classifier)), retval=True)
-    end_time = time.time()
+        process = psutil.Process(os.getpid())
+        stop_event = threading.Event()
+        monitor_thread = threading.Thread(target=monitor_cpu, args=(process,))
+        monitor_thread.start()
 
-    stop_event.set()
-    monitor_thread.join()
+        start_time = time.time()
+        mem_usage, results = memory_usage((self.evaluate_detector, ()), retval=True)
+        end_time = time.time()
 
-    cpu_usage = sum(cpu_samples) / len(cpu_samples) / psutil.cpu_count()    
-    execution_time = end_time - start_time
-    max_mem_usage = max(mem_usage)
+        stop_event.set()
+        monitor_thread.join()
 
-    results = pd.DataFrame([{
-        "dataset": stream.__class__.__name__,
-        "classifier": classifier.__class__.__name__,
-        "detector": detector.__class__.__name__ if detector else "None",
-        "cumulative_accuracy": results.cumulative.metrics_dict()["accuracy"],
-        "cumulative_f1": results.cumulative.metrics_dict()["f1_score"],
-        "windowed_accuracy": results.windowed.metrics_per_window()["accuracy"].tolist(),
-        "windowed_f1": results.windowed.metrics_per_window()["f1_score"].tolist(),
-        "execution_time": execution_time,
-        "cpu_usage": cpu_usage,
-        "memory_usage": max_mem_usage,
-        "num_changes": len(detector.detection_index if detector != None else []),
-    }])
+        cpu_usage = sum(cpu_samples) / len(cpu_samples) / psutil.cpu_count() if cpu_samples else 0
+        execution_time = end_time - start_time
+        max_mem_usage = max(mem_usage)
 
-    if save_results:
-        results.to_csv(filename, mode="a", header=not pd.io.common.file_exists(filename), index=False)
-        print(f"Results saved to {filename}")
-    if print_results:
-        print("Results:")
-        print(results)
+        results_df = pd.DataFrame([{
+            "dataset": self.stream.__class__.__name__,
+            "classifier": self.classifier.__class__.__name__,
+            "detector": self.detector.__class__.__name__ if self.detector else "None",
+            "cumulative_accuracy": results.cumulative.metrics_dict()["accuracy"],
+            "cumulative_kappa": results.cumulative.metrics_dict()["kappa"],
+            "windowed_accuracy": results.windowed.metrics_per_window()["accuracy"].tolist(),
+            "windowed_kappa": results.windowed.metrics_per_window()["kappa"].tolist(),
+            "execution_time": execution_time,
+            "cpu_usage": cpu_usage,
+            "memory_usage": max_mem_usage,
+            "num_changes": len(self.detector.detection_index if self.detector != None else []),
+        }])
 
-    return results
+        if self.save_results:
+            results_df.to_csv(self.filename, mode="a", header=not pd.io.common.file_exists(self.filename), index=False)
+            print(f"Results saved to {self.filename}")
+        if self.print_results:
+            print("Results:")
+            print(results_df)
 
+        return results_df
 
+    @staticmethod
+    def parse_args():
+        parser = argparse.ArgumentParser(description="Select stream, classifier, and detector.")
+        parser.add_argument("--stream", choices=StreamFactory.stream_classes.keys(), required=True, help="Select the data stream.")
+        parser.add_argument("--classifier", choices=ClassifierFactory.classifier_classes.keys(), required=True, help="Select the classifier.")
+        parser.add_argument("--detector", choices=DetectorFactory.detector_classes.keys(), required=True, help="Select the drift detector.")
 
+        parser.add_argument("--window_size", type=float, default=1.0, help="Window size as a percentage of dataset size (default: 1.0).")
+        # cooldown window lengt
+        parser.add_argument("--cooldown_window", type=int, default=0, help="Cooldown window length (default: 0).")
+        
+        parser.add_argument("--print_results", type=lambda x: x.lower() == 'true', default=False, help="Print results to console (default: True)")
+        parser.add_argument("--save_results", type=lambda x: x.lower() == 'true', default=True, help="Save results to a CSV file (default: True)")
+        parser.add_argument("--filename", type=str, default="results.csv", help="Filename to save results (default: results.csv).")
 
-def parse_args():
+        args = parser.parse_args()
 
-    parser = argparse.ArgumentParser(description="Select stream, classifier, and detector.")
-    parser.add_argument("--stream", choices=StreamFactory.stream_classes.keys(), required=True, help="Select the data stream.")
-    parser.add_argument("--classifier", choices=ClassifierFactory.classifier_classes.keys(), required=True, help="Select the classifier.")
-    parser.add_argument("--detector", choices=DetectorFactory.detector_classes.keys(), required=True, help="Select the drift detector.")
+        stream = StreamFactory.create(args.stream)
+        classifier = ClassifierFactory.create(args.classifier, stream.get_schema())
+        detector = DetectorFactory.create(args.detector)
 
-    parser.add_argument("--window_size", type=float, default=1.0, help="Window size as a percentage of dataset size (default: 1.0).")
-    parser.add_argument("--print_results", type=lambda x: x.lower() == 'true', default=False, help="Print results to console (default: True)")
-    parser.add_argument("--save_results", type=lambda x: x.lower() == 'true', default=True, help="Save results to a CSV file (default: True)")
-    parser.add_argument("--filename", type=str, default="results.csv", help="Filename to save results (default: results.csv).")
+        if args.window_size < 0 or args.window_size > 100:
+            raise ValueError("Window size must be a value between 0 and 1.")
+        window_size = int(stream._length * (args.window_size / 100)) if args.window_size else int(1.0 * (args.window_size / 100))
+        if args.window_size < 0:
+            raise ValueError("Window size must be a non-negative integer.")
+        cooldown_window = args.cooldown_window if args.cooldown_window else 0
+        print_results = args.print_results
+        save_results = args.save_results
+        filename = args.filename
 
-
-    args = parser.parse_args()
-
-    stream = StreamFactory.create(args.stream)
-    classifier = ClassifierFactory.create(args.classifier, stream.get_schema())
-    detector = DetectorFactory.create(args.detector)
-
-    WINDOW_SIZE = int(stream._length * (args.window_size / 100)) if args.window_size else int(1.0 * (args.window_size / 100))
-    print_results = args.print_results
-    save_results = args.save_results
-    filename = args.filename
-
-
-    return stream, classifier, detector, print_results, save_results, filename
-
-
+        return stream, classifier, detector, window_size, cooldown_window, print_results, save_results, filename
 
 
 if __name__ == "__main__":
-
-    stream, classifier, detector, print_results, save_results, filename = parse_args()
-
-    benchmark_detector(detector, stream, classifier, print_results=print_results, save_results=save_results, filename=filename)
+    benchmark = Benchmarker()
+    benchmark.benchmark_detector()
