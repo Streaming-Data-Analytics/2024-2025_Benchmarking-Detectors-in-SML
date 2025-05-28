@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd "$(dirname "$0")"
+
 streams=("Electricity" "Hyper100k" "Covtype" "Sensor")
 classifiers=("HoeffdingTree")
 detectors=("CUSUM" "PageHinkley" "DDM" "HDDMAverage" "HDDMWeighted" "ADWIN" "STEPD" "None")

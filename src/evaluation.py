@@ -21,14 +21,19 @@ from capymoa.evaluation.results import PrequentialResults
 
 
 class Benchmarker:
-    def __init__(self, stream=None, classifier=None, detector=None, window_size=100, cooldown_window=0, print_results=False, save_results=False, filename="results.csv"):
+    def __init__(self, stream=None, classifier=None, detector=None, window_size=1.0, cooldown_window=0, print_results=False, save_results=False, filename="results.csv"):
         if stream is None or classifier is None or detector is None:
             stream, classifier, detector, window_size, cooldown_window, print_results, save_results, filename = self.parse_args()
         
         self.stream = stream
         self.classifier = classifier
         self.detector = detector
-        self.window_size = window_size
+
+        if window_size < 0 or window_size > 100:
+            raise ValueError("Window size must be a value between 0 and 1.")
+        self.window_size = int(stream._length * (window_size / 100)) if window_size else int(1.0 * (window_size / 100))
+        if cooldown_window < 0:
+            raise ValueError("Window size must be a non-negative integer.")
         self.cooldown_window = cooldown_window
         self.print_results = print_results if print_results is not None else False
         self.save_results = save_results if save_results is not None else True
@@ -146,12 +151,8 @@ class Benchmarker:
         classifier = ClassifierFactory.create(args.classifier, stream.get_schema())
         detector = DetectorFactory.create(args.detector)
 
-        if args.window_size < 0 or args.window_size > 100:
-            raise ValueError("Window size must be a value between 0 and 1.")
-        window_size = int(stream._length * (args.window_size / 100)) if args.window_size else int(1.0 * (args.window_size / 100))
-        if args.window_size < 0:
-            raise ValueError("Window size must be a non-negative integer.")
-        cooldown_window = args.cooldown_window if args.cooldown_window else 0
+        window_size = args.window_size
+        cooldown_window = args.cooldown_window
         print_results = args.print_results
         save_results = args.save_results
         filename = args.filename
