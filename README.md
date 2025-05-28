@@ -64,3 +64,64 @@ This project will provide a detailed overview of Concept Drift Detectors in Capy
 - Add a requirement.txt file for code reproducibility and instructions on how to replicate the results;
 - Commit your changes to your local repository;
 - Push your changes to your online repository.
+
+
+## Repository Structure
+
+The repository is structured in the following way
+
+- **notebooks/**  
+  Jupyter and Colab-ready notebooks for evaluating and benchmarking drift detectors.
+
+- **results/**  
+  CSV files containing saved results from evaluations.
+
+- **src/**  
+  Source code and scripts:  
+  - `evaluation.py` — Evaluates a single detector on a specified data stream.  
+  - `benchmark_all.sh` — Runs evaluations across all datasets and detectors.  
+  - Additional structures for managing experiments and evaluations.
+
+## Usage
+
+
+After setting up the environment (check [**INSTALL.md**](INSTALL.md) for details), you can run your own experiments using the ```src/evaluation.py``` python script by specifying the following parameters.
+
+```--stream```: Select a stream between Covtype, Electricity, Hyper100k, or Sensor.
+
+```--classifier```: Select a classifier between NaiveBayes or HoeffdingTree.
+
+```--detector```: Select a detector between ADWIN, STEPD, CUSUM, PageHinkley, DDM, HDDMAverage, HDDMWeighted or None.
+
+#### Additional parameters
+
+```--window_size```: Evaluation window size as a percentage (default: 1.0).
+
+```--cooldown_window```: Cooldown window length (default: 0).
+
+```--print_results```: Whether to print results to console (default: False).
+
+```--save_results```: Whether to save results to CSV (default: False).
+
+```--filename```: Output filename (default: "results.csv").
+
+Example:
+```bash
+python src/evaluation.py \
+    --stream Electricity \
+    --classifier HoeffdingTree \
+    --detector ADWIN \
+    --window_size 1.0 \
+    --cooldown_window 50 \
+    --print_results True \
+    --save_results True \
+    --filename electricity_adwin_results.csv
+```
+
+To run all evaluations together, use the provided script:
+
+```bash
+./src/benchmark_all.sh
+```
+
+This will iterate through the combinations of streams, classifiers, and detectors, and save the aggregated results inside the results.csv file.
