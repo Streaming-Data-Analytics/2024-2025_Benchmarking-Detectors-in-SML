@@ -1,6 +1,8 @@
-# 2024-2025 Benchmarking Detectors in SML
+# Benchmarking Detectors in SML
 
-![capymoa](https://github.com/adaptive-machine-learning/CapyMOA/raw/main/docs/images/CapyMOA.jpeg)
+![animation](manim/animation.gif)
+
+
 
 Optional project of the [Streaming Data Analytics](http://emanueledellavalle.org/teaching/streaming-data-analytics-2023-24/) course provided by [Politecnico di Milano](https://www11.ceda.polimi.it/schedaincarico/schedaincarico/controller/scheda_pubblica/SchedaPublic.do?&evn_default=evento&c_classe=811164&polij_device_category=DESKTOP&__pj0=0&__pj1=d563c55e73c3035baf5b0bab2dda086b).
 
@@ -29,6 +31,9 @@ The repository is structured in the following way
   - `evaluation.py` — Evaluates a single detector on a specified data stream.  
   - `benchmark_all.sh` — Runs evaluations across all datasets and detectors.  
   - Additional structures for managing experiments and evaluations.
+
+- **manim/**  
+  Code and gif utilized for initial animation
 
 ## Usage
 
