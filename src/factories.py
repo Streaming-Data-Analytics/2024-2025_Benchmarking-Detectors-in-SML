@@ -2,14 +2,33 @@
 
 from capymoa.classifier import NaiveBayes, HoeffdingTree
 
-from capymoa.datasets import Electricity, Covtype,  Hyper100k, Sensor
+from capymoa.datasets import Electricity, Covtype, Hyper100k, Sensor
 from capymoa.datasets import ElectricityTiny # For testing
 
 from capymoa.drift.detectors import ADWIN, STEPD, CUSUM, PageHinkley, DDM, HDDMAverage, HDDMWeighted
+from optwin import OPTWIN
 
+class DetectorFactory:
+    detector_classes = {
+        "ADWIN": ADWIN,
+        "STEPD": STEPD,
+        "CUSUM": CUSUM,
+        "PageHinkley": PageHinkley,
+        "DDM": DDM,
+        "HDDMAverage": HDDMAverage,
+        "HDDMWeighted": HDDMWeighted,
+        "OPTWIN": OPTWIN
+    }
+
+    @staticmethod
+    def create(detector_type, **kwargs):
+        """Create a new drift detector instance based on type."""
+        if detector_type not in DetectorFactory.detector_classes:
+            raise ValueError(f"Unknown drift detector type: {detector_type}")
+            
+        return DetectorFactory.detector_classes[detector_type](**kwargs)
 
 class ClassifierFactory:
-
     classifier_classes = {
         "NaiveBayes": NaiveBayes,
         "HoeffdingTree": HoeffdingTree
@@ -18,8 +37,6 @@ class ClassifierFactory:
     @staticmethod
     def create(classifier_type, schema):
         """Create a new classifier instance based on type."""
-        
-        
         if classifier_type not in ClassifierFactory.classifier_classes:
             raise ValueError(f"Unknown classifier type: {classifier_type}")
             
@@ -46,32 +63,3 @@ class StreamFactory:
             
         # Return a new instance of the requested stream
         return StreamFactory.stream_classes[stream_type]()
-
-
-class DetectorFactory:
-
-
-    detector_classes = {
-        "ADWIN": ADWIN,
-        "STEPD": STEPD,
-        "CUSUM": CUSUM,
-        "PageHinkley": PageHinkley,
-        "DDM": DDM,
-        "HDDMAverage": HDDMAverage,
-        "HDDMWeighted": HDDMWeighted,
-        "None": None
-    }
-
-    @staticmethod
-    def create(detector_type):
-        """Create a new detector instance based on type."""
-        
-        
-        if detector_type == "None":
-            return None
-            
-        if detector_type not in DetectorFactory.detector_classes:
-            raise ValueError(f"Unknown detector type: {detector_type}")
-            
-        # Return a new instance of the requested detector
-        return DetectorFactory.detector_classes[detector_type]()
